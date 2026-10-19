@@ -605,6 +605,7 @@
     </div>
 
     <script>
+        // MASUKKAN URL WEB APP DEPLOYMENT GOOGLE APPS SCRIPT ANDA DI SINI
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzVXfpUx2YSYSvgoNPlsRYdxDHV313ySJwJN7yugIEvKh9nIi4uHsFawzm1Ctlu8M-M/exec"; 
 
         let clients = [];
@@ -632,12 +633,13 @@
         };
 
         async function callAppsScript(action, payload = {}) {
-            if (SCRIPT_URL === "https://script.google.com/macros/s/AKfycbzVXfpUx2YSYSvgoNPlsRYdxDHV313ySJwJN7yugIEvKh9nIi4uHsFawzm1Ctlu8M-M/exec" || !SCRIPT_URL) {
+            if (!SCRIPT_URL || SCRIPT_URL.includes("GANTI_DENGAN_URL")) {
                 console.warn("SCRIPT_URL belum disetel! Menggunakan mode demo/lokal.");
                 return null;
             }
 
             try {
+                // Menggunakan text/plain untuk menghindari isu preflight CORS pada GAS
                 const response = await fetch(SCRIPT_URL, {
                     method: "POST",
                     body: JSON.stringify({ action: action, ...payload }),
@@ -645,6 +647,7 @@
                         "Content-Type": "text/plain;charset=utf-8"
                     }
                 });
+                
                 const result = await response.json();
                 return result;
             } catch (err) {
@@ -656,7 +659,7 @@
         async function handleLogin() {
             const pwd = document.getElementById('login-password').value;
             
-            if (SCRIPT_URL === "https://script.google.com/macros/s/AKfycbzVXfpUx2YSYSvgoNPlsRYdxDHV313ySJwJN7yugIEvKh9nIi4uHsFawzm1Ctlu8M-M/exec" || !SCRIPT_URL) {
+            if (!SCRIPT_URL || SCRIPT_URL.includes("GANTI_DENGAN_URL")) {
                 if (pwd === 'admin123' || pwd.length > 0) {
                     localStorage.setItem('bale_internet_logged', 'true');
                     document.getElementById('login-screen').classList.add('hidden');
@@ -762,9 +765,9 @@
 
         function deleteClient(id) {
             if (confirm("Hapus data klien ini beserta seluruh riwayatnya?")) {
-                clients = clients.filter(c => c.id !== id);
-                payments = payments.filter(p => p.clientId !== id);
-                otherBills = otherBills.filter(ob => ob.clientId !== id);
+                clients = clients.filter(c => String(c.id) !== String(id));
+                payments = payments.filter(p => String(p.clientId) !== String(id));
+                otherBills = otherBills.filter(ob => String(ob.clientId) !== String(id));
                 renderAll();
                 saveDataToSheet();
             }
@@ -830,7 +833,7 @@
             const tbody = document.getElementById('payment-table-body');
             tbody.innerHTML = '';
             payments.slice().reverse().forEach(p => {
-                const client = clients.find(c => c.id === p.clientId);
+                const client = clients.find(c => String(c.id) === String(p.clientId));
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td class="p-3 text-xs">${p.date}</td>
@@ -895,7 +898,7 @@
 
         function deleteOtherBill(id) {
             if (confirm("Hapus tagihan lainnya ini?")) {
-                otherBills = otherBills.filter(ob => ob.id !== id);
+                otherBills = otherBills.filter(ob => String(ob.id) !== String(id));
                 renderAll();
                 saveDataToSheet();
             }
@@ -906,7 +909,7 @@
             tbody.innerHTML = '';
 
             otherBills.slice().reverse().forEach(ob => {
-                const client = clients.find(c => c.id === ob.clientId);
+                const client = clients.find(c => String(c.id) === String(ob.clientId));
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td class="p-3 text-xs text-slate-500">${ob.date}</td>
@@ -923,8 +926,8 @@
 
         function getClientOtherBillsTotal(clientId) {
             return otherBills
-                .filter(ob => ob.clientId === clientId)
-                .reduce((sum, ob) => sum + (ob.amount || 0), 0);
+                .filter(ob => String(ob.clientId) === String(clientId))
+                .reduce((sum, ob) => sum + (parseInt(ob.amount) || 0), 0);
         }
 
         function calculatePaymentInfo() {
@@ -932,7 +935,7 @@
             const startMonth = document.getElementById('pay-start-month').value;
             const endMonth = document.getElementById('pay-end-month').value;
 
-            const client = clients.find(c => c.id === clientId);
+            const client = clients.find(c => String(c.id) === String(clientId));
             if (!client) {
                 document.getElementById('pay-current-period-total').innerText = 'Rp 0';
                 document.getElementById('pay-past-arrears-total').innerText = 'Rp 0';
@@ -948,7 +951,7 @@
             const otherBillsTotal = getClientOtherBillsTotal(client.id);
 
             const months = countMonthsBetween(startMonth, endMonth);
-            const periodTotal = months * client.total;
+            const periodTotal = months * parseInt(client.total || 0);
             const grandTotal = pastArrears + periodTotal + otherBillsTotal;
 
             document.getElementById('pay-current-period-total').innerText = formatRupiah(periodTotal);
@@ -966,11 +969,11 @@
             const startMonth = client.startMonthActive || currentMonthStr;
             
             const totalMonths = countMonthsBetween(startMonth, currentMonthStr);
-            const totalBilled = totalMonths * client.total;
+            const totalBilled = totalMonths * parseInt(client.total || 0);
 
             const totalPaid = payments
-                .filter(p => p.clientId === client.id)
-                .reduce((sum, p) => sum + (p.amount || 0), 0);
+                .filter(p => String(p.clientId) === String(client.id))
+                .reduce((sum, p) => sum + (parseInt(p.amount) || 0), 0);
 
             const otherBillsTotal = getClientOtherBillsTotal(client.id);
             const monthlyArrears = Math.max(0, totalBilled - totalPaid);
@@ -1009,7 +1012,7 @@
             const syncIcon = document.getElementById('sync-icon');
             if (syncIcon) syncIcon.classList.add('fa-spin');
 
-            if (SCRIPT_URL === "https://script.google.com/macros/s/AKfycbzVXfpUx2YSYSvgoNPlsRYdxDHV313ySJwJN7yugIEvKh9nIi4uHsFawzm1Ctlu8M-M/exec" || !SCRIPT_URL) {
+            if (!SCRIPT_URL || SCRIPT_URL.includes("GANTI_DENGAN_URL")) {
                 if (syncIcon) syncIcon.classList.remove('fa-spin');
                 loadDummyPreviewData();
                 showToast("Mode Demo/Offline (SCRIPT_URL belum diatur)", "info");
@@ -1035,7 +1038,7 @@
         }
 
         async function saveDataToSheet() {
-            if (SCRIPT_URL === "https://script.google.com/macros/s/AKfycbzVXfpUx2YSYSvgoNPlsRYdxDHV313ySJwJN7yugIEvKh9nIi4uHsFawzm1Ctlu8M-M/exec" || !SCRIPT_URL) {
+            if (!SCRIPT_URL || SCRIPT_URL.includes("GANTI_DENGAN_URL")) {
                 showToast("Data Tersimpan Lokal (Mode Demo)", "success");
                 return;
             }
@@ -1063,7 +1066,7 @@
                 return;
             }
 
-            const client = clients.find(c => c.id === clientId);
+            const client = clients.find(c => String(c.id) === String(clientId));
             if (!client) return;
 
             const arrearsInfo = calculateClientArrears(client);
@@ -1073,9 +1076,9 @@
             document.getElementById('dt-lokasi').innerText = client.lokasi;
             document.getElementById('dt-hp').innerText = client.hp;
             document.getElementById('dt-total-tunggakan').innerText = formatRupiah(arrearsInfo.arrears);
-            document.getElementById('dt-total-tagihan').innerText = formatRupiah(client.total + arrearsInfo.otherBillsTotal);
+            document.getElementById('dt-total-tagihan').innerText = formatRupiah(parseInt(client.total || 0) + arrearsInfo.otherBillsTotal);
             document.getElementById('dt-akun').innerText = client.akun;
-            document.getElementById('dt-biaya-akun').innerText = formatRupiah(client.akun * RATE_PER_ACCOUNT);
+            document.getElementById('dt-biaya-akun').innerText = formatRupiah(parseInt(client.akun || 0) * RATE_PER_ACCOUNT);
             document.getElementById('dt-biaya-lain').innerText = formatRupiah(client.biayaLain);
             document.getElementById('dt-ket-lain').innerText = client.ketBiayaLain || 'Tidak ada';
             document.getElementById('dt-other-bills-total').innerText = formatRupiah(arrearsInfo.otherBillsTotal);
@@ -1083,7 +1086,7 @@
             const historyBody = document.getElementById('dt-payment-history');
             historyBody.innerHTML = '';
 
-            const clientPayments = payments.filter(p => p.clientId === clientId);
+            const clientPayments = payments.filter(p => String(p.clientId) === String(clientId));
 
             if (clientPayments.length === 0) {
                 historyBody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400">Belum ada riwayat pembayaran.</td></tr>`;
@@ -1107,7 +1110,7 @@
             const endMonth = document.getElementById('kuitansi-end-month').value;
             const type = document.getElementById('kuitansi-type').value;
 
-            const client = clients.find(c => c.id === clientId);
+            const client = clients.find(c => String(c.id) === String(clientId));
             if (!client) {
                 document.getElementById('kw-nama').innerText = '-';
                 document.getElementById('kw-lokasi').innerText = '-';
@@ -1130,7 +1133,7 @@
             const otherBillsTotal = getClientOtherBillsTotal(client.id);
 
             const months = countMonthsBetween(startMonth, endMonth);
-            const periodTotal = months * client.total;
+            const periodTotal = months * parseInt(client.total || 0);
             const grandTotal = pastArrears + periodTotal + otherBillsTotal;
 
             const tbody = document.getElementById('kw-details-body');
@@ -1240,9 +1243,9 @@
                 }
 
                 if (match) {
-                    totalMasuk += p.amount;
+                    totalMasuk += parseInt(p.amount || 0);
                     txCount++;
-                    const client = clients.find(c => c.id === p.clientId);
+                    const client = clients.find(c => String(c.id) === String(p.clientId));
 
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
@@ -1266,11 +1269,11 @@
             let totalEstimasi = 0;
 
             clients.forEach(c => {
-                totalEstimasi += c.total;
+                totalEstimasi += parseInt(c.total || 0);
             });
 
             let totalTerbayar = 0;
-            payments.forEach(p => totalTerbayar += p.amount);
+            payments.forEach(p => totalTerbayar += parseInt(p.amount || 0));
 
             let grandTotalTunggakan = 0;
             const tbody = document.getElementById('dash-table-body');
@@ -1319,7 +1322,7 @@
 
         async function saveNewPassword() {
             const newPwd = document.getElementById('new-password').value;
-            if (SCRIPT_URL === "URL_WEB_APP_GOOGLE_APPS_SCRIPT_ANDA" || !SCRIPT_URL) {
+            if (!SCRIPT_URL || SCRIPT_URL.includes("GANTI_DENGAN_URL")) {
                 showToast("Password diperbarui (Mode Demo)", "success");
                 closePasswordModal();
                 return;
