@@ -1,0 +1,1402 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manager Bale Internet</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: white; color: black; }
+            .print-card { border: 1px solid #000; box-shadow: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <div id="toast" class="fixed top-5 right-5 z-50 hidden transition-all duration-300 transform translate-y-[-20px] opacity-0">
+        <div id="toast-content" class="flex items-center gap-3 px-5 py-3 rounded-xl shadow-lg text-white font-medium"></div>
+    </div>
+
+    <!-- Screen Login -->
+    <div id="login-screen" class="fixed inset-0 z-50 bg-slate-900 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full border border-slate-100 text-center">
+            <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+                <i class="fa-solid fa-wifi"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800">Manager Bale Internet</h2>
+            <p class="text-slate-500 text-sm mt-1">Masukan password akses untuk melanjutkan</p>
+
+            <form id="form-login" onsubmit="event.preventDefault(); handleLogin();" class="mt-6 text-left space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Password Akses</label>
+                    <div class="relative">
+                        <input type="password" id="login-password" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none pr-10" placeholder="••••••••" required>
+                        <button type="button" onclick="togglePasswordVisibility('login-password', 'eye-icon')" class="absolute right-3 top-3 text-slate-400 hover:text-slate-600">
+                            <i id="eye-icon" class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <button type="submit" id="btn-login" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl transition shadow-lg shadow-indigo-200 flex justify-center items-center gap-2">
+                    <span>Masuk Aplikasi</span>
+                    <i class="fa-solid fa-arrow-right text-sm"></i>
+                </button>
+            </form>
+            <p class="text-xs text-slate-400 mt-6">Default Password: <code class="bg-slate-100 px-2 py-0.5 rounded font-mono">admin123</code></p>
+        </div>
+    </div>
+
+    <header class="no-print bg-white border-b border-slate-200 sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-3">
+                    <div class="bg-indigo-600 text-white p-2.5 rounded-xl shadow-md">
+                        <i class="fa-solid fa-wifi text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-slate-900 leading-none">Bale Internet</h1>
+                        <span class="text-xs font-medium text-indigo-600">Manager Data Pengguna</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="syncData()" title="Sinkronisasi Data" class="p-2.5 text-slate-600 hover:bg-slate-100 rounded-xl transition flex items-center gap-1.5 text-sm font-medium">
+                        <i id="sync-icon" class="fa-solid fa-rotate"></i>
+                        <span class="hidden sm:inline">Sync</span>
+                    </button>
+                    <button onclick="openPasswordModal()" title="Ubah Password" class="p-2.5 text-slate-600 hover:bg-slate-100 rounded-xl transition">
+                        <i class="fa-solid fa-key"></i>
+                    </button>
+                    <button onclick="logout()" title="Keluar" class="p-2.5 text-red-600 hover:bg-red-50 rounded-xl transition">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <nav class="bg-slate-100 border-t border-slate-200 overflow-x-auto no-scrollbar">
+            <div class="max-w-7xl mx-auto px-4 flex gap-2 py-2 text-sm font-medium">
+                <button onclick="switchTab('beranda')" id="tab-beranda" class="tab-btn px-4 py-2 rounded-xl flex items-center gap-2 transition whitespace-nowrap bg-indigo-600 text-white font-semibold">
+                    <i class="fa-solid fa-chart-pie"></i> Beranda
+                </button>
+                <button onclick="switchTab('clien')" id="tab-clien" class="tab-btn px-4 py-2 rounded-xl flex items-center gap-2 transition whitespace-nowrap text-slate-600 hover:bg-white">
+                    <i class="fa-solid fa-users"></i> Daftar Clien
+                </button>
+                <button onclick="switchTab('tagihan-lain')" id="tab-tagihan-lain" class="tab-btn px-4 py-2 rounded-xl flex items-center gap-2 transition whitespace-nowrap text-slate-600 hover:bg-white">
+                    <i class="fa-solid fa-file-invoice-dollar"></i> Tagihan Lainnya
+                </button>
+                <button onclick="switchTab('pembayaran')" id="tab-pembayaran" class="tab-btn px-4 py-2 rounded-xl flex items-center gap-2 transition whitespace-nowrap text-slate-600 hover:bg-white">
+                    <i class="fa-solid fa-wallet"></i> Pembayaran/Tagihan
+                </button>
+                <button onclick="switchTab('detail')" id="tab-detail" class="tab-btn px-4 py-2 rounded-xl flex items-center gap-2 transition whitespace-nowrap text-slate-600 hover:bg-white">
+                    <i class="fa-solid fa-address-card"></i> Detail Data
+                </button>
+                <button onclick="switchTab('kuitansi')" id="tab-kuitansi" class="tab-btn px-4 py-2 rounded-xl flex items-center gap-2 transition whitespace-nowrap text-slate-600 hover:bg-white">
+                    <i class="fa-solid fa-receipt"></i> Kuitansi
+                </button>
+                <button onclick="switchTab('laporan')" id="tab-laporan" class="tab-btn px-4 py-2 rounded-xl flex items-center gap-2 transition whitespace-nowrap text-slate-600 hover:bg-white">
+                    <i class="fa-solid fa-file-lines"></i> Laporan
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+
+        <section id="page-beranda" class="space-y-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-semibold text-slate-400 uppercase">Total Clien</span>
+                        <h3 id="dash-total-clien" class="text-2xl font-bold text-slate-800 mt-1">0</h3>
+                    </div>
+                    <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-semibold text-slate-400 uppercase">Estimasi/Bln</span>
+                        <h3 id="dash-estimasi-pendapatan" class="text-xl font-bold text-slate-800 mt-1">Rp 0</h3>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-calculator"></i>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-semibold text-slate-400 uppercase">Total Terbayar</span>
+                        <h3 id="dash-total-terbayar" class="text-xl font-bold text-emerald-600 mt-1">Rp 0</h3>
+                    </div>
+                    <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-semibold text-slate-400 uppercase">Total Tunggakan</span>
+                        <h3 id="dash-total-tunggakan" class="text-xl font-bold text-rose-600 mt-1">Rp 0</h3>
+                    </div>
+                    <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-5 border-b border-slate-100 font-bold text-slate-800 text-base">
+                    Ringkasan Tagihan Klien
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-slate-600">
+                        <thead class="text-xs uppercase bg-slate-50 text-slate-500 border-b">
+                            <tr>
+                                <th class="p-3">Nama Klien</th>
+                                <th class="p-3">Lokasi</th>
+                                <th class="p-3">Akun</th>
+                                <th class="p-3">Tagihan/Bln</th>
+                                <th class="p-3">Status Tunggakan</th>
+                                <th class="p-3">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dash-table-body" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="page-clien" class="hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <h3 id="form-clien-title" class="text-base font-bold text-slate-800 border-b pb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-user-plus text-indigo-600"></i> Tambah Clien Baru
+                    </h3>
+                    <form id="form-clien" onsubmit="event.preventDefault(); saveClient();" class="space-y-4">
+                        <input type="hidden" id="clien-id">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Nama Clien</label>
+                            <input type="text" id="clien-nama" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500" placeholder="Ahmad..." required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Lokasi</label>
+                            <input type="text" id="clien-lokasi" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500" placeholder="Dusun..." required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">No HP / WhatsApp</label>
+                            <input type="text" id="clien-hp" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500" placeholder="0812..." required>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Jumlah Akun</label>
+                                <input type="number" id="clien-akun" min="1" value="1" oninput="calculateClientTotal()" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Bulan Mulai Aktif</label>
+                                <input type="month" id="clien-start-active" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm" required>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Biaya Rutin Lain (Rp)</label>
+                                <input type="number" id="clien-biaya-lain" value="0" oninput="calculateClientTotal()" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Ket Biaya Lain</label>
+                                <input type="text" id="clien-ket-lain" placeholder="Sewa Router" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm">
+                            </div>
+                        </div>
+                        <div class="p-3 bg-indigo-50 rounded-xl flex justify-between items-center text-sm">
+                            <span class="font-medium text-indigo-900">Total Tagihan/Bln:</span>
+                            <span id="clien-total-calculated" class="font-bold text-indigo-600 text-base">Rp 25.000</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="resetClientForm()" class="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-600 py-2.5 rounded-xl font-semibold text-sm transition">Batal</button>
+                            <button type="submit" class="w-2/3 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl font-semibold text-sm transition shadow-md">Simpan Clien</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <h3 class="text-base font-bold text-slate-800 border-b pb-3">Daftar Klien Terdaftar</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left text-slate-600">
+                            <thead class="text-xs uppercase bg-slate-50 text-slate-500 border-b">
+                                <tr>
+                                    <th class="p-3">Nama</th>
+                                    <th class="p-3">Lokasi</th>
+                                    <th class="p-3">Akun</th>
+                                    <th class="p-3">Tagihan/Bln</th>
+                                    <th class="p-3 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="client-table-body" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="page-tagihan-lain" class="hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <h3 class="text-base font-bold text-slate-800 border-b pb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-circle-plus text-indigo-600"></i> Form Tagihan Lainnya
+                    </h3>
+                    <form id="form-tagihan-lain" onsubmit="event.preventDefault(); saveOtherBill();" class="space-y-4">
+                        <input type="hidden" id="other-bill-id">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Pilih Clien</label>
+                            <select id="other-bill-clien-id" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm" required>
+                                <option value="">-- Pilih Clien --</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Keterangan Tagihan</label>
+                            <input type="text" id="other-bill-desc" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="Contoh: Pembelian Kabel / Jasa Perbaikan" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Nominal (Rp)</label>
+                            <input type="number" id="other-bill-amount" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="0" min="1" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Tanggal Tagihan</label>
+                            <input type="date" id="other-bill-date" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 text-sm" required>
+                        </div>
+                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl font-semibold text-sm transition shadow-md flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-floppy-disk"></i> Simpan Tagihan Lainnya
+                        </button>
+                    </form>
+                </div>
+
+                <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <h3 class="text-base font-bold text-slate-800 border-b pb-3">Daftar Tagihan Lainnya</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left text-slate-600">
+                            <thead class="text-xs uppercase bg-slate-50 text-slate-500 border-b">
+                                <tr>
+                                    <th class="p-3">Tanggal</th>
+                                    <th class="p-3">Clien</th>
+                                    <th class="p-3">Keterangan</th>
+                                    <th class="p-3">Nominal</th>
+                                    <th class="p-3 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="other-bill-table-body" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="page-pembayaran" class="hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <h3 class="text-base font-bold text-slate-800 border-b pb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-cash-register text-indigo-600"></i> Form Input Pembayaran
+                    </h3>
+                    <form id="form-pembayaran" onsubmit="event.preventDefault(); savePayment();" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Pilih Clien</label>
+                            <select id="pay-clien-id" onchange="calculatePaymentInfo()" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm" required>
+                                <option value="">-- Pilih Clien --</option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Bulan Mulai</label>
+                                <input type="month" id="pay-start-month" onchange="calculatePaymentInfo()" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Bulan Sampai</label>
+                                <input type="month" id="pay-end-month" onchange="calculatePaymentInfo()" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm" required>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-slate-50 rounded-xl space-y-2 border border-slate-200">
+                            <div class="flex justify-between text-xs text-slate-600">
+                                <span>Tagihan Periode Sekarang:</span>
+                                <span id="pay-current-period-total" class="font-bold">Rp 0</span>
+                            </div>
+                            <div class="flex justify-between text-xs text-rose-600">
+                                <span>+ Sisa Tunggakan Bulan Lalu:</span>
+                                <span id="pay-past-arrears-total" class="font-bold">Rp 0</span>
+                            </div>
+                            <div class="flex justify-between text-xs text-amber-700">
+                                <span>+ Tagihan Lainnya:</span>
+                                <span id="pay-other-bills-total" class="font-bold">Rp 0</span>
+                            </div>
+                            <div class="flex justify-between text-sm font-bold text-slate-800 border-t pt-2">
+                                <span>TOTAL HARUS DIBAYAR:</span>
+                                <span id="pay-total-calculated" class="text-indigo-600 text-base">Rp 0</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Jumlah Dibayar (Rp)</label>
+                            <input type="number" id="pay-amount" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" required>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Catatan / Metode Pembayaran</label>
+                            <input type="text" id="pay-notes" placeholder="Contoh: Transfer BCA / Tunai" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm">
+                        </div>
+
+                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl font-semibold text-sm transition shadow-md flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-check"></i> Simpan Pembayaran
+                        </button>
+                    </form>
+                </div>
+
+                <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <h3 class="text-base font-bold text-slate-800 border-b pb-3">Riwayat Transaksi Pembayaran</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left text-slate-600">
+                            <thead class="text-xs uppercase bg-slate-50 text-slate-500 border-b">
+                                <tr>
+                                    <th class="p-3">Tanggal</th>
+                                    <th class="p-3">Clien</th>
+                                    <th class="p-3">Periode</th>
+                                    <th class="p-3">Jumlah Dibayar</th>
+                                    <th class="p-3">Catatan</th>
+                                </tr>
+                            </thead>
+                            <tbody id="payment-table-body" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="page-detail" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+                <div class="max-w-md">
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-2">Pilih Clien untuk Melihat Detail</label>
+                    <select id="detail-select-clien" onchange="renderClientDetail()" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 text-sm">
+                        <option value="">-- Pilih Clien --</option>
+                    </select>
+                </div>
+
+                <div id="detail-card-container" class="hidden space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                            <span class="text-xs text-slate-500 block">Nama Clien</span>
+                            <span id="dt-nama" class="text-lg font-bold text-slate-800">-</span>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                            <span class="text-xs text-slate-500 block">Lokasi</span>
+                            <span id="dt-lokasi" class="text-base font-semibold text-slate-800">-</span>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                            <span class="text-xs text-slate-500 block">HP / WA</span>
+                            <span id="dt-hp" class="text-base font-semibold text-slate-800">-</span>
+                        </div>
+                        <div class="p-4 bg-rose-50 rounded-xl border border-rose-100">
+                            <span class="text-xs text-rose-600 block font-semibold">Total Sisa Tunggakan Saat Ini</span>
+                            <span id="dt-total-tunggakan" class="text-lg font-bold text-rose-700">-</span>
+                        </div>
+                    </div>
+
+                    <div class="border-t pt-4">
+                        <h4 class="font-bold text-slate-800 mb-3">Rincian Komponen Tagihan Bulanan & Lainnya</h4>
+                        <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-2 text-sm max-w-lg">
+                            <div class="flex justify-between">
+                                <span>Jumlah Akun: <strong id="dt-akun">0</strong> akun</span>
+                                <span id="dt-biaya-akun" class="font-semibold">Rp 0</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Biaya Rutin Lain (<span id="dt-ket-lain">-</span>):</span>
+                                <span id="dt-biaya-lain" class="font-semibold">Rp 0</span>
+                            </div>
+                            <div class="flex justify-between text-amber-700 font-semibold">
+                                <span>Tagihan Tambahan Lainnya:</span>
+                                <span id="dt-other-bills-total">Rp 0</span>
+                            </div>
+                            <div class="flex justify-between border-t pt-2 font-bold text-slate-800">
+                                <span>Tagihan Per Bulan:</span>
+                                <span id="dt-total-tagihan" class="text-indigo-600">Rp 0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="border-t pt-4">
+                        <h4 class="font-bold text-slate-800 mb-3">Histori Pembayaran Clien</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left text-slate-600">
+                                <thead class="text-xs uppercase bg-slate-50 text-slate-500 border-b">
+                                    <tr>
+                                        <th class="p-3">Tanggal</th>
+                                        <th class="p-3">Periode Bulan</th>
+                                        <th class="p-3">Jumlah Dibayar</th>
+                                        <th class="p-3">Keterangan</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dt-payment-history" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="page-kuitansi" class="hidden space-y-6">
+            <div class="no-print bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                <h3 class="text-base font-bold text-slate-800 border-b pb-3">Cetak Kuitansi Pembayaran & Tagihan</h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Pilih Clien</label>
+                        <select id="kuitansi-clien-id" onchange="generateKuitansiPreview()" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm">
+                            <option value="">-- Pilih Clien --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Periode Mulai</label>
+                        <input type="month" id="kuitansi-start-month" onchange="generateKuitansiPreview()" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Periode Sampai</label>
+                        <input type="month" id="kuitansi-end-month" onchange="generateKuitansiPreview()" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Tipe Kuitansi</label>
+                        <select id="kuitansi-type" onchange="generateKuitansiPreview()" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm">
+                            <option value="pembayaran">Kuitansi Pembayaran</option>
+                            <option value="tagihan">Kuitansi Tagihan (Termasuk Tunggakan)</option>
+                            <option value="semua">Semua (Gabungan)</option>
+                        </select>
+                    </div>
+                </div>
+                <button onclick="window.print()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition flex items-center gap-2">
+                    <i class="fa-solid fa-print"></i> Cetak / Print Kuitansi
+                </button>
+            </div>
+
+            <div id="kuitansi-preview-container" class="bg-white p-8 rounded-2xl border border-slate-200 shadow-lg max-w-2xl mx-auto space-y-6 print-card">
+                <div class="text-center border-b pb-4">
+                    <h2 class="text-2xl font-bold text-slate-900 uppercase tracking-wide">Manager Bale Internet</h2>
+                    <p class="text-xs text-slate-500">Layanan Akses Internet Cepat & Terjangkau</p>
+                    <p class="text-xs font-semibold text-indigo-600 mt-1" id="kw-title">KUITANSI PEMBAYARAN</p>
+                </div>
+
+                <div class="grid grid-cols-2 text-sm gap-2">
+                    <div>
+                        <span class="text-xs text-slate-400 uppercase block">Nama Clien:</span>
+                        <strong id="kw-nama" class="text-slate-800 text-base">-</strong>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs text-slate-400 uppercase block">Tanggal Cetak:</span>
+                        <span id="kw-tgl" class="font-medium">-</span>
+                    </div>
+                    <div>
+                        <span class="text-xs text-slate-400 uppercase block">Lokasi:</span>
+                        <span id="kw-lokasi" class="font-medium">-</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs text-slate-400 uppercase block">No HP / WA:</span>
+                        <span id="kw-hp" class="font-medium">-</span>
+                    </div>
+                </div>
+
+                <div class="border rounded-xl overflow-hidden">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-slate-100 text-xs text-slate-600 uppercase border-b">
+                            <tr>
+                                <th class="p-3">Deskripsi / Rincian Periode</th>
+                                <th class="p-3 text-right">Jumlah (Rp)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="kw-details-body" class="divide-y divide-slate-100"></tbody>
+                        <tfoot class="bg-slate-50 font-bold border-t">
+                            <tr>
+                                <td class="p-3">Total Nominal:</td>
+                                <td id="kw-total-amount" class="p-3 text-right text-indigo-600">Rp 0</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <div class="flex justify-between items-end pt-8 border-t text-sm">
+                    <div class="text-center">
+                        <p class="text-xs text-slate-400 mb-12">Penerima / Admin</p>
+                        <p class="font-bold border-t border-slate-300 px-4 pt-1">Bale Internet</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-xs text-slate-400 mb-12">Pelanggan / Clien</p>
+                        <p id="kw-ttd-nama" class="font-bold border-t border-slate-300 px-4 pt-1">-</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="page-laporan" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+                <div class="flex flex-wrap gap-4 items-end border-b pb-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Filter Laporan</label>
+                        <select id="lap-filter-type" onchange="toggleLaporanFilter()" class="px-3 py-2 rounded-xl border border-slate-200 text-sm">
+                            <option value="bulan">Laporan Bulanan</option>
+                            <option value="tahun">Laporan Tahunan</option>
+                        </select>
+                    </div>
+                    <div id="lap-month-container">
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Pilih Bulan & Tahun</label>
+                        <input type="month" id="lap-month-input" class="px-3 py-2 rounded-xl border border-slate-200 text-sm">
+                    </div>
+                    <div id="lap-year-container" class="hidden">
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Pilih Tahun</label>
+                        <input type="number" id="lap-year-input" min="2020" max="2035" value="2026" class="px-3 py-2 rounded-xl border border-slate-200 text-sm">
+                    </div>
+                    <button onclick="generateLaporan()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-xl font-semibold text-sm transition flex items-center gap-2">
+                        <i class="fa-solid fa-filter"></i> Tampilkan Laporan
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                        <span class="text-xs font-semibold text-emerald-600 uppercase block">Total Pendapatan Terbayar</span>
+                        <h4 id="lap-total-masuk" class="text-2xl font-bold text-emerald-800">Rp 0</h4>
+                    </div>
+                    <div class="p-4 bg-blue-50 rounded-xl border border-blue-100">
+                        <span class="text-xs font-semibold text-blue-600 uppercase block">Jumlah Transaksi</span>
+                        <h4 id="lap-total-tx" class="text-2xl font-bold text-blue-800">0 Transaksi</h4>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-slate-600">
+                        <thead class="text-xs uppercase bg-slate-50 text-slate-500 border-b">
+                            <tr>
+                                <th class="p-3">ID Transaksi</th>
+                                <th class="p-3">Tanggal</th>
+                                <th class="p-3">Nama Clien</th>
+                                <th class="p-3">Periode Pembayaran</th>
+                                <th class="p-3">Catatan</th>
+                                <th class="p-3 text-right">Jumlah (Rp)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lap-table-body" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal Ubah Password -->
+    <div id="password-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full space-y-4">
+            <h3 class="font-bold text-slate-800 text-lg">Ubah Password Akses</h3>
+            <form onsubmit="event.preventDefault(); saveNewPassword();" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Password Baru</label>
+                    <input type="password" id="new-password" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm" required>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button type="button" onclick="closePasswordModal()" class="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-sm">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold">Simpan Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzVXfpUx2YSYSvgoNPlsRYdxDHV313ySJwJN7yugIEvKh9nIi4uHsFawzm1Ctlu8M-M/exec"; 
+
+        let clients = [];
+        let payments = [];
+        let otherBills = [];
+        const RATE_PER_ACCOUNT = 25000;
+
+        window.onload = function() {
+            const now = new Date();
+            const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            const currentDateStr = now.toISOString().split('T')[0];
+
+            document.getElementById('pay-start-month').value = currentMonthStr;
+            document.getElementById('pay-end-month').value = currentMonthStr;
+            document.getElementById('kuitansi-start-month').value = currentMonthStr;
+            document.getElementById('kuitansi-end-month').value = currentMonthStr;
+            document.getElementById('lap-month-input').value = currentMonthStr;
+            document.getElementById('clien-start-active').value = currentMonthStr;
+            document.getElementById('other-bill-date').value = currentDateStr;
+
+            if (localStorage.getItem('bale_internet_logged') === 'true') {
+                document.getElementById('login-screen').classList.add('hidden');
+                syncData();
+            }
+        };
+
+        async function callAppsScript(action, payload = {}) {
+            if (SCRIPT_URL === "https://script.google.com/macros/s/AKfycbzVXfpUx2YSYSvgoNPlsRYdxDHV313ySJwJN7yugIEvKh9nIi4uHsFawzm1Ctlu8M-M/exec" || !SCRIPT_URL) {
+                console.warn("SCRIPT_URL belum disetel! Menggunakan mode demo/lokal.");
+                return null;
+            }
+
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: "POST",
+                    body: JSON.stringify({ action: action, ...payload }),
+                    headers: {
+                        "Content-Type": "text/plain;charset=utf-8"
+                    }
+                });
+                const result = await response.json();
+                return result;
+            } catch (err) {
+                console.error("Fetch Error:", err);
+                throw err;
+            }
+        }
+
+        async function handleLogin() {
+            const pwd = document.getElementById('login-password').value;
+            
+            if (SCRIPT_URL === "https://script.google.com/macros/s/AKfycbzVXfpUx2YSYSvgoNPlsRYdxDHV313ySJwJN7yugIEvKh9nIi4uHsFawzm1Ctlu8M-M/exec" || !SCRIPT_URL) {
+                if (pwd === 'admin123' || pwd.length > 0) {
+                    localStorage.setItem('bale_internet_logged', 'true');
+                    document.getElementById('login-screen').classList.add('hidden');
+                    loadDummyPreviewData();
+                    showToast("Login Berhasil (Mode Demo/Offline)", "success");
+                } else {
+                    showToast("Password salah!", "error");
+                }
+                return;
+            }
+
+            try {
+                showToast("Menghubungkan ke server...", "info");
+                const res = await callAppsScript('login', { password: pwd });
+                if (res && res.status === 'success') {
+                    localStorage.setItem('bale_internet_logged', 'true');
+                    document.getElementById('login-screen').classList.add('hidden');
+                    syncData();
+                    showToast("Login Berhasil", "success");
+                } else {
+                    showToast((res && res.message) || "Password salah!", "error");
+                }
+            } catch (err) {
+                showToast("Gagal terhubung ke Apps Script: " + err.message, "error");
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('bale_internet_logged');
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('login-password').value = '';
+            showToast("Berhasil keluar", "info");
+        }
+
+        function loadDummyPreviewData() {
+            if (clients.length === 0) {
+                const now = new Date();
+                const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                clients = [
+                    { id: 'CLI-001', nama: "Ahmad Syafi'i", lokasi: 'Dusun Bale RT 01', hp: '081234567890', akun: 2, biayaLain: 10000, ketBiayaLain: 'Sewa Router', total: 60000, startMonthActive: currentMonthStr },
+                    { id: 'CLI-002', nama: 'Budi Santoso', lokasi: 'Gang Internet RT 03', hp: '089876543210', akun: 1, biayaLain: 0, ketBiayaLain: '', total: 25000, startMonthActive: currentMonthStr }
+                ];
+                otherBills = [
+                    { id: 'OTH-1', clientId: 'CLI-001', description: 'Ganti Plug RJ45 & Patchcord', amount: 15000, date: now.toISOString().split('T')[0], status: 'unpaid' }
+                ];
+            }
+            renderAll();
+        }
+
+        function calculateClientTotal() {
+            const akun = parseInt(document.getElementById('clien-akun').value) || 1;
+            const biayaLain = parseInt(document.getElementById('clien-biaya-lain').value) || 0;
+            const total = (akun * RATE_PER_ACCOUNT) + biayaLain;
+            document.getElementById('clien-total-calculated').innerText = formatRupiah(total);
+        }
+
+        function saveClient() {
+            const id = document.getElementById('clien-id').value || 'CLI-' + Date.now();
+            const nama = document.getElementById('clien-nama').value.trim();
+            const lokasi = document.getElementById('clien-lokasi').value.trim();
+            const hp = document.getElementById('clien-hp').value.trim();
+            const akun = parseInt(document.getElementById('clien-akun').value) || 1;
+            const biayaLain = parseInt(document.getElementById('clien-biaya-lain').value) || 0;
+            const ketBiayaLain = document.getElementById('clien-ket-lain').value.trim();
+            const startMonthActive = document.getElementById('clien-start-active').value;
+
+            if (!nama || !lokasi || !hp) {
+                showToast("Isi semua data klien dengan lengkap", "error");
+                return;
+            }
+
+            const total = (akun * RATE_PER_ACCOUNT) + biayaLain;
+            const clientData = { id, nama, lokasi, hp, akun, biayaLain, ketBiayaLain, total, startMonthActive };
+
+            const idx = clients.findIndex(c => c.id === id);
+            if (idx >= 0) {
+                clients[idx] = clientData;
+            } else {
+                clients.push(clientData);
+            }
+
+            resetClientForm();
+            renderAll();
+            saveDataToSheet();
+        }
+
+        function editClient(id) {
+            const c = clients.find(item => item.id === id);
+            if (!c) return;
+
+            document.getElementById('clien-id').value = c.id;
+            document.getElementById('clien-nama').value = c.nama;
+            document.getElementById('clien-lokasi').value = c.lokasi;
+            document.getElementById('clien-hp').value = c.hp;
+            document.getElementById('clien-akun').value = c.akun;
+            document.getElementById('clien-biaya-lain').value = c.biayaLain || 0;
+            document.getElementById('clien-ket-lain').value = c.ketBiayaLain || '';
+            document.getElementById('clien-start-active').value = c.startMonthActive || '';
+            
+            document.getElementById('form-clien-title').innerHTML = `<i class="fa-solid fa-user-pen text-indigo-600"></i> Edit Data Clien`;
+            calculateClientTotal();
+        }
+
+        function deleteClient(id) {
+            if (confirm("Hapus data klien ini beserta seluruh riwayatnya?")) {
+                clients = clients.filter(c => c.id !== id);
+                payments = payments.filter(p => p.clientId !== id);
+                otherBills = otherBills.filter(ob => ob.clientId !== id);
+                renderAll();
+                saveDataToSheet();
+            }
+        }
+
+        function resetClientForm() {
+            document.getElementById('form-clien').reset();
+            document.getElementById('clien-id').value = '';
+            document.getElementById('form-clien-title').innerHTML = `<i class="fa-solid fa-user-plus text-indigo-600"></i> Tambah Clien Baru`;
+            calculateClientTotal();
+        }
+
+        function renderClientTable() {
+            const tbody = document.getElementById('client-table-body');
+            tbody.innerHTML = '';
+            clients.forEach(c => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="p-3 font-semibold text-slate-800">${c.nama}</td>
+                    <td class="p-3 text-xs">${c.lokasi}</td>
+                    <td class="p-3 text-xs">${c.akun} Akun</td>
+                    <td class="p-3 font-bold text-indigo-600">${formatRupiah(c.total)}</td>
+                    <td class="p-3 text-center">
+                        <div class="flex justify-center gap-1">
+                            <button onclick="editClient('${c.id}')" class="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100"><i class="fa-solid fa-pen text-xs"></i></button>
+                            <button onclick="deleteClient('${c.id}')" class="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100"><i class="fa-solid fa-trash text-xs"></i></button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function savePayment() {
+            const clientId = document.getElementById('pay-clien-id').value;
+            const startMonth = document.getElementById('pay-start-month').value;
+            const endMonth = document.getElementById('pay-end-month').value;
+            const amount = parseInt(document.getElementById('pay-amount').value) || 0;
+            const notes = document.getElementById('pay-notes').value.trim();
+
+            if (!clientId || !startMonth || !endMonth || amount <= 0) {
+                showToast("Lengkapi data pembayaran dengan benar", "error");
+                return;
+            }
+
+            const payData = {
+                id: 'TX-' + Date.now(),
+                clientId,
+                startMonth,
+                endMonth,
+                amount,
+                notes,
+                date: new Date().toISOString().split('T')[0]
+            };
+
+            payments.push(payData);
+            document.getElementById('form-pembayaran').reset();
+            renderAll();
+            saveDataToSheet();
+        }
+
+        function renderPaymentTable() {
+            const tbody = document.getElementById('payment-table-body');
+            tbody.innerHTML = '';
+            payments.slice().reverse().forEach(p => {
+                const client = clients.find(c => c.id === p.clientId);
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="p-3 text-xs">${p.date}</td>
+                    <td class="p-3 font-semibold text-slate-800">${client ? client.nama : 'Klien Dihapus'}</td>
+                    <td class="p-3 text-xs">${p.startMonth} s/d ${p.endMonth}</td>
+                    <td class="p-3 font-bold text-emerald-600">${formatRupiah(p.amount)}</td>
+                    <td class="p-3 text-xs">${p.notes || '-'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function switchTab(tabName) {
+            const tabs = ['beranda', 'clien', 'tagihan-lain', 'pembayaran', 'detail', 'kuitansi', 'laporan'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                const page = document.getElementById(`page-${t}`);
+                if (btn && page) {
+                    if (t === tabName) {
+                        btn.classList.add('bg-indigo-600', 'text-white', 'font-semibold');
+                        btn.classList.remove('text-slate-600', 'hover:bg-white');
+                        page.classList.remove('hidden');
+                    } else {
+                        btn.classList.remove('bg-indigo-600', 'text-white', 'font-semibold');
+                        btn.classList.add('text-slate-600', 'hover:bg-white');
+                        page.classList.add('hidden');
+                    }
+                }
+            });
+
+            if (tabName === 'kuitansi') generateKuitansiPreview();
+            if (tabName === 'laporan') generateLaporan();
+        }
+
+        function saveOtherBill() {
+            const clientId = document.getElementById('other-bill-clien-id').value;
+            const description = document.getElementById('other-bill-desc').value.trim();
+            const amount = parseInt(document.getElementById('other-bill-amount').value) || 0;
+            const date = document.getElementById('other-bill-date').value;
+
+            if (!clientId || !description || amount <= 0 || !date) {
+                showToast("Lengkapi form tagihan lainnya dengan benar", "error");
+                return;
+            }
+
+            const billData = {
+                id: 'OTH-' + Date.now(),
+                clientId,
+                description,
+                amount,
+                date,
+                status: 'unpaid'
+            };
+
+            otherBills.push(billData);
+            document.getElementById('form-tagihan-lain').reset();
+            document.getElementById('other-bill-date').value = new Date().toISOString().split('T')[0];
+
+            renderAll();
+            saveDataToSheet();
+        }
+
+        function deleteOtherBill(id) {
+            if (confirm("Hapus tagihan lainnya ini?")) {
+                otherBills = otherBills.filter(ob => ob.id !== id);
+                renderAll();
+                saveDataToSheet();
+            }
+        }
+
+        function renderOtherBillsTable() {
+            const tbody = document.getElementById('other-bill-table-body');
+            tbody.innerHTML = '';
+
+            otherBills.slice().reverse().forEach(ob => {
+                const client = clients.find(c => c.id === ob.clientId);
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="p-3 text-xs text-slate-500">${ob.date}</td>
+                    <td class="p-3 font-semibold text-slate-800">${client ? client.nama : 'Klien Dihapus'}</td>
+                    <td class="p-3 text-xs">${ob.description}</td>
+                    <td class="p-3 font-bold text-amber-600">${formatRupiah(ob.amount)}</td>
+                    <td class="p-3 text-center">
+                        <button onclick="deleteOtherBill('${ob.id}')" class="p-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"><i class="fa-solid fa-trash text-xs"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function getClientOtherBillsTotal(clientId) {
+            return otherBills
+                .filter(ob => ob.clientId === clientId)
+                .reduce((sum, ob) => sum + (ob.amount || 0), 0);
+        }
+
+        function calculatePaymentInfo() {
+            const clientId = document.getElementById('pay-clien-id').value;
+            const startMonth = document.getElementById('pay-start-month').value;
+            const endMonth = document.getElementById('pay-end-month').value;
+
+            const client = clients.find(c => c.id === clientId);
+            if (!client) {
+                document.getElementById('pay-current-period-total').innerText = 'Rp 0';
+                document.getElementById('pay-past-arrears-total').innerText = 'Rp 0';
+                document.getElementById('pay-other-bills-total').innerText = 'Rp 0';
+                document.getElementById('pay-total-calculated').innerText = 'Rp 0';
+                document.getElementById('pay-amount').value = '';
+                return;
+            }
+
+            const monthBeforeStart = getPreviousMonthStr(startMonth);
+            const pastInfo = calculateClientArrears(client, monthBeforeStart);
+            const pastArrears = pastInfo.monthlyArrears;
+            const otherBillsTotal = getClientOtherBillsTotal(client.id);
+
+            const months = countMonthsBetween(startMonth, endMonth);
+            const periodTotal = months * client.total;
+            const grandTotal = pastArrears + periodTotal + otherBillsTotal;
+
+            document.getElementById('pay-current-period-total').innerText = formatRupiah(periodTotal);
+            document.getElementById('pay-past-arrears-total').innerText = formatRupiah(pastArrears);
+            document.getElementById('pay-other-bills-total').innerText = formatRupiah(otherBillsTotal);
+            document.getElementById('pay-total-calculated').innerText = formatRupiah(grandTotal);
+            document.getElementById('pay-amount').value = grandTotal;
+        }
+
+        function calculateClientArrears(client, targetEndMonthStr = null) {
+            if (!client) return { totalBilled: 0, totalPaid: 0, monthlyArrears: 0, otherBillsTotal: 0, arrears: 0 };
+
+            const now = new Date();
+            const currentMonthStr = targetEndMonthStr || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            const startMonth = client.startMonthActive || currentMonthStr;
+            
+            const totalMonths = countMonthsBetween(startMonth, currentMonthStr);
+            const totalBilled = totalMonths * client.total;
+
+            const totalPaid = payments
+                .filter(p => p.clientId === client.id)
+                .reduce((sum, p) => sum + (p.amount || 0), 0);
+
+            const otherBillsTotal = getClientOtherBillsTotal(client.id);
+            const monthlyArrears = Math.max(0, totalBilled - totalPaid);
+            const arrears = Math.max(0, (totalBilled + otherBillsTotal) - totalPaid);
+
+            return { totalBilled, totalPaid, monthlyArrears, otherBillsTotal, arrears };
+        }
+
+        function populateClientDropdowns() {
+            const dropdowns = ['pay-clien-id', 'detail-select-clien', 'kuitansi-clien-id', 'other-bill-clien-id'];
+            dropdowns.forEach(id => {
+                const select = document.getElementById(id);
+                if (!select) return;
+                const currentVal = select.value;
+                select.innerHTML = '<option value="">-- Pilih Clien --</option>';
+                clients.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.id;
+                    opt.textContent = `${c.nama} (${c.lokasi})`;
+                    select.appendChild(opt);
+                });
+                select.value = currentVal;
+            });
+        }
+
+        function renderAll() {
+            populateClientDropdowns();
+            renderDashboard();
+            renderClientTable();
+            renderOtherBillsTable();
+            renderPaymentTable();
+            renderClientDetail();
+        }
+
+        async function syncData() {
+            const syncIcon = document.getElementById('sync-icon');
+            if (syncIcon) syncIcon.classList.add('fa-spin');
+
+            if (SCRIPT_URL === "https://script.google.com/macros/s/AKfycbzVXfpUx2YSYSvgoNPlsRYdxDHV313ySJwJN7yugIEvKh9nIi4uHsFawzm1Ctlu8M-M/exec" || !SCRIPT_URL) {
+                if (syncIcon) syncIcon.classList.remove('fa-spin');
+                loadDummyPreviewData();
+                showToast("Mode Demo/Offline (SCRIPT_URL belum diatur)", "info");
+                return;
+            }
+
+            try {
+                const res = await callAppsScript('getData');
+                if (syncIcon) syncIcon.classList.remove('fa-spin');
+                if (res && res.status === 'success') {
+                    clients = res.clients || [];
+                    payments = res.payments || [];
+                    otherBills = res.otherBills || [];
+                    renderAll();
+                    showToast("Sinkronisasi data berhasil", "success");
+                } else {
+                    showToast("Gagal mengambil data dari Google Sheet", "error");
+                }
+            } catch (err) {
+                if (syncIcon) syncIcon.classList.remove('fa-spin');
+                showToast("Gagal koneksi Google Sheet: " + err.message, "error");
+            }
+        }
+
+        async function saveDataToSheet() {
+            if (SCRIPT_URL === "https://script.google.com/macros/s/AKfycbzVXfpUx2YSYSvgoNPlsRYdxDHV313ySJwJN7yugIEvKh9nIi4uHsFawzm1Ctlu8M-M/exec" || !SCRIPT_URL) {
+                showToast("Data Tersimpan Lokal (Mode Demo)", "success");
+                return;
+            }
+
+            try {
+                const payload = { clients, payments, otherBills };
+                const res = await callAppsScript('saveData', payload);
+                if (res && res.status === 'success') {
+                    showToast("Data tersimpan permanen ke Spreadsheet!", "success");
+                } else {
+                    showToast("Gagal menyimpan: " + ((res && res.message) || ''), "error");
+                }
+            } catch (err) {
+                showToast("Gagal simpan data: " + err.message, "error");
+            }
+        }
+
+        function renderClientDetail() {
+            const clientId = document.getElementById('detail-select-clien').value;
+            const container = document.getElementById('detail-card-container');
+            if (!container) return;
+
+            if (!clientId) {
+                container.classList.add('hidden');
+                return;
+            }
+
+            const client = clients.find(c => c.id === clientId);
+            if (!client) return;
+
+            const arrearsInfo = calculateClientArrears(client);
+
+            container.classList.remove('hidden');
+            document.getElementById('dt-nama').innerText = client.nama;
+            document.getElementById('dt-lokasi').innerText = client.lokasi;
+            document.getElementById('dt-hp').innerText = client.hp;
+            document.getElementById('dt-total-tunggakan').innerText = formatRupiah(arrearsInfo.arrears);
+            document.getElementById('dt-total-tagihan').innerText = formatRupiah(client.total + arrearsInfo.otherBillsTotal);
+            document.getElementById('dt-akun').innerText = client.akun;
+            document.getElementById('dt-biaya-akun').innerText = formatRupiah(client.akun * RATE_PER_ACCOUNT);
+            document.getElementById('dt-biaya-lain').innerText = formatRupiah(client.biayaLain);
+            document.getElementById('dt-ket-lain').innerText = client.ketBiayaLain || 'Tidak ada';
+            document.getElementById('dt-other-bills-total').innerText = formatRupiah(arrearsInfo.otherBillsTotal);
+
+            const historyBody = document.getElementById('dt-payment-history');
+            historyBody.innerHTML = '';
+
+            const clientPayments = payments.filter(p => p.clientId === clientId);
+
+            if (clientPayments.length === 0) {
+                historyBody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400">Belum ada riwayat pembayaran.</td></tr>`;
+            } else {
+                clientPayments.forEach(p => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="p-3">${p.date}</td>
+                        <td class="p-3">${p.startMonth} s/d ${p.endMonth}</td>
+                        <td class="p-3 font-semibold text-emerald-600">${formatRupiah(p.amount)}</td>
+                        <td class="p-3">${p.notes || '-'}</td>
+                    `;
+                    historyBody.appendChild(tr);
+                });
+            }
+        }
+
+        function generateKuitansiPreview() {
+            const clientId = document.getElementById('kuitansi-clien-id').value;
+            const startMonth = document.getElementById('kuitansi-start-month').value;
+            const endMonth = document.getElementById('kuitansi-end-month').value;
+            const type = document.getElementById('kuitansi-type').value;
+
+            const client = clients.find(c => c.id === clientId);
+            if (!client) {
+                document.getElementById('kw-nama').innerText = '-';
+                document.getElementById('kw-lokasi').innerText = '-';
+                document.getElementById('kw-hp').innerText = '-';
+                document.getElementById('kw-ttd-nama').innerText = '-';
+                document.getElementById('kw-details-body').innerHTML = `<tr><td colspan="2" class="p-4 text-center text-slate-400">Pilih Clien untuk melihat preview.</td></tr>`;
+                document.getElementById('kw-total-amount').innerText = 'Rp 0';
+                return;
+            }
+
+            document.getElementById('kw-nama').innerText = client.nama;
+            document.getElementById('kw-lokasi').innerText = client.lokasi;
+            document.getElementById('kw-hp').innerText = client.hp;
+            document.getElementById('kw-ttd-nama').innerText = client.nama;
+            document.getElementById('kw-tgl').innerText = new Date().toLocaleDateString('id-ID');
+
+            const monthBeforeStart = getPreviousMonthStr(startMonth);
+            const pastInfo = calculateClientArrears(client, monthBeforeStart);
+            const pastArrears = pastInfo.monthlyArrears;
+            const otherBillsTotal = getClientOtherBillsTotal(client.id);
+
+            const months = countMonthsBetween(startMonth, endMonth);
+            const periodTotal = months * client.total;
+            const grandTotal = pastArrears + periodTotal + otherBillsTotal;
+
+            const tbody = document.getElementById('kw-details-body');
+            tbody.innerHTML = '';
+
+            if (type === 'pembayaran') {
+                document.getElementById('kw-title').innerText = 'KUITANSI PEMBAYARAN';
+                tbody.innerHTML = `
+                    <tr>
+                        <td class="p-3">Pembayaran Akses Internet (${client.akun} Akun) Periode <strong>${startMonth}</strong> s/d <strong>${endMonth}</strong></td>
+                        <td class="p-3 text-right font-semibold">${formatRupiah(periodTotal)}</td>
+                    </tr>
+                    ${otherBillsTotal > 0 ? `
+                    <tr>
+                        <td class="p-3">Tagihan Tambahan / Tagihan Lainnya</td>
+                        <td class="p-3 text-right font-semibold">${formatRupiah(otherBillsTotal)}</td>
+                    </tr>
+                    ` : ''}
+                    ${pastArrears > 0 ? `
+                    <tr>
+                        <td class="p-3">Pelunasan Tunggakan Bulan Sebelumnya</td>
+                        <td class="p-3 text-right font-semibold">${formatRupiah(pastArrears)}</td>
+                    </tr>
+                    ` : ''}
+                `;
+                document.getElementById('kw-total-amount').innerText = formatRupiah(grandTotal);
+            } else if (type === 'tagihan') {
+                document.getElementById('kw-title').innerText = 'KUITANSI INVOICE / TAGIHAN';
+                tbody.innerHTML = `
+                    <tr>
+                        <td class="p-3">Tagihan Akses Internet (${client.akun} Akun) Periode ${startMonth} s/d ${endMonth} (${months} Bln)</td>
+                        <td class="p-3 text-right">${formatRupiah(periodTotal)}</td>
+                    </tr>
+                    ${otherBillsTotal > 0 ? `
+                    <tr class="bg-amber-50 text-amber-900">
+                        <td class="p-3">Biaya/Tagihan Lainnya</td>
+                        <td class="p-3 text-right font-bold text-amber-700">${formatRupiah(otherBillsTotal)}</td>
+                    </tr>
+                    ` : ''}
+                    ${pastArrears > 0 ? `
+                    <tr class="bg-rose-50 text-rose-800">
+                        <td class="p-3">Tunggakan Belum Dibayar Bulan Sebelumnya</td>
+                        <td class="p-3 text-right font-bold text-rose-600">${formatRupiah(pastArrears)}</td>
+                    </tr>
+                    ` : ''}
+                `;
+                document.getElementById('kw-total-amount').innerText = formatRupiah(grandTotal);
+            } else {
+                document.getElementById('kw-title').innerText = 'KUITANSI TAGIHAN & PEMBAYARAN';
+                tbody.innerHTML = `
+                    <tr>
+                        <td class="p-3">Tagihan Periode ${startMonth} s/d ${endMonth}</td>
+                        <td class="p-3 text-right font-semibold">${formatRupiah(periodTotal)}</td>
+                    </tr>
+                    ${otherBillsTotal > 0 ? `
+                    <tr>
+                        <td class="p-3">Tagihan Lainnya</td>
+                        <td class="p-3 text-right font-semibold">${formatRupiah(otherBillsTotal)}</td>
+                    </tr>
+                    ` : ''}
+                    ${pastArrears > 0 ? `
+                    <tr>
+                        <td class="p-3">Sisa Tunggakan Bulan Lalu</td>
+                        <td class="p-3 text-right font-semibold">${formatRupiah(pastArrears)}</td>
+                    </tr>
+                    ` : ''}
+                    <tr class="bg-emerald-50">
+                        <td class="p-3 text-emerald-800 font-bold">Total Terbayar Lunas:</td>
+                        <td class="p-3 text-right font-bold text-emerald-600">${formatRupiah(grandTotal)}</td>
+                    </tr>
+                `;
+                document.getElementById('kw-total-amount').innerText = formatRupiah(grandTotal);
+            }
+        }
+
+        function toggleLaporanFilter() {
+            const type = document.getElementById('lap-filter-type').value;
+            if (type === 'bulan') {
+                document.getElementById('lap-month-container').classList.remove('hidden');
+                document.getElementById('lap-year-container').classList.add('hidden');
+            } else {
+                document.getElementById('lap-month-container').classList.add('hidden');
+                document.getElementById('lap-year-container').classList.remove('hidden');
+            }
+        }
+
+        function generateLaporan() {
+            const type = document.getElementById('lap-filter-type').value;
+            const tbody = document.getElementById('lap-table-body');
+            tbody.innerHTML = '';
+
+            let totalMasuk = 0;
+            let txCount = 0;
+
+            payments.forEach(p => {
+                let match = false;
+                if (type === 'bulan') {
+                    const monthInput = document.getElementById('lap-month-input').value;
+                    if (p.startMonth.startsWith(monthInput) || p.endMonth.startsWith(monthInput) || p.date.startsWith(monthInput)) {
+                        match = true;
+                    }
+                } else {
+                    const yearInput = document.getElementById('lap-year-input').value;
+                    if (p.date.startsWith(yearInput)) {
+                        match = true;
+                    }
+                }
+
+                if (match) {
+                    totalMasuk += p.amount;
+                    txCount++;
+                    const client = clients.find(c => c.id === p.clientId);
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="p-3 text-xs font-mono">${p.id}</td>
+                        <td class="p-3 text-xs">${p.date}</td>
+                        <td class="p-3 font-semibold text-slate-800">${client ? client.nama : 'Klien Dihapus'}</td>
+                        <td class="p-3">${p.startMonth} s/d ${p.endMonth}</td>
+                        <td class="p-3 text-xs">${p.notes || '-'}</td>
+                        <td class="p-3 text-right font-bold text-emerald-600">${formatRupiah(p.amount)}</td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            });
+
+            document.getElementById('lap-total-masuk').innerText = formatRupiah(totalMasuk);
+            document.getElementById('lap-total-tx').innerText = `${txCount} Transaksi`;
+        }
+
+        function renderDashboard() {
+            const totalClien = clients.length;
+            let totalEstimasi = 0;
+
+            clients.forEach(c => {
+                totalEstimasi += c.total;
+            });
+
+            let totalTerbayar = 0;
+            payments.forEach(p => totalTerbayar += p.amount);
+
+            let grandTotalTunggakan = 0;
+            const tbody = document.getElementById('dash-table-body');
+            tbody.innerHTML = '';
+
+            clients.forEach(c => {
+                const arrearsInfo = calculateClientArrears(c);
+                grandTotalTunggakan += arrearsInfo.arrears;
+
+                const tr = document.createElement('tr');
+                const badgeClass = arrearsInfo.arrears > 0 ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700';
+                const statusText = arrearsInfo.arrears > 0 ? `Tunggakan: ${formatRupiah(arrearsInfo.arrears)}` : 'Lunas';
+
+                tr.innerHTML = `
+                    <td class="p-3 font-semibold text-slate-800">${c.nama}</td>
+                    <td class="p-3 text-xs text-slate-500">${c.lokasi}</td>
+                    <td class="p-3 text-xs">${c.akun} Akun</td>
+                    <td class="p-3 font-bold text-indigo-600">${formatRupiah(c.total)}</td>
+                    <td class="p-3"><span class="px-2.5 py-1 rounded-full text-xs font-bold ${badgeClass}">${statusText}</span></td>
+                    <td class="p-3">
+                        <button onclick="quickPay('${c.id}')" class="px-3 py-1 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 rounded-lg text-xs font-semibold">Bayar</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('dash-total-clien').innerText = totalClien;
+            document.getElementById('dash-estimasi-pendapatan').innerText = formatRupiah(totalEstimasi);
+            document.getElementById('dash-total-terbayar').innerText = formatRupiah(totalTerbayar);
+            document.getElementById('dash-total-tunggakan').innerText = formatRupiah(grandTotalTunggakan);
+        }
+
+        function quickPay(clientId) {
+            switchTab('pembayaran');
+            document.getElementById('pay-clien-id').value = clientId;
+            calculatePaymentInfo();
+        }
+
+        function openPasswordModal() {
+            document.getElementById('password-modal').classList.remove('hidden');
+        }
+
+        function closePasswordModal() {
+            document.getElementById('password-modal').classList.add('hidden');
+        }
+
+        async function saveNewPassword() {
+            const newPwd = document.getElementById('new-password').value;
+            if (SCRIPT_URL === "URL_WEB_APP_GOOGLE_APPS_SCRIPT_ANDA" || !SCRIPT_URL) {
+                showToast("Password diperbarui (Mode Demo)", "success");
+                closePasswordModal();
+                return;
+            }
+
+            try {
+                const res = await callAppsScript('changePassword', { newPassword: newPwd });
+                if (res && res.status === 'success') {
+                    showToast("Password berhasil diperbarui", "success");
+                    closePasswordModal();
+                } else {
+                    showToast("Gagal mengubah password", "error");
+                }
+            } catch (err) {
+                showToast("Gagal mengubah password: " + err.message, "error");
+            }
+        }
+
+        function formatRupiah(number) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(number || 0);
+        }
+
+        function countMonthsBetween(startStr, endStr) {
+            if (!startStr || !endStr) return 0;
+            const [startY, startM] = startStr.split('-').map(Number);
+            const [endY, endM] = endStr.split('-').map(Number);
+            const count = ((endY - startY) * 12) + (endM - startM) + 1;
+            return count > 0 ? count : 0;
+        }
+
+        function getPreviousMonthStr(monthStr) {
+            if (!monthStr) return monthStr;
+            const [y, m] = monthStr.split('-').map(Number);
+            let prevY = y;
+            let prevM = m - 1;
+            if (prevM < 1) {
+                prevM = 12;
+                prevY -= 1;
+            }
+            return `${prevY}-${String(prevM).padStart(2, '0')}`;
+        }
+
+        function togglePasswordVisibility(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const content = document.getElementById('toast-content');
+
+            const bgClasses = {
+                success: 'bg-emerald-600',
+                error: 'bg-red-600',
+                info: 'bg-indigo-600'
+            };
+
+            content.className = `flex items-center gap-3 px-5 py-3 rounded-xl shadow-lg text-white font-medium ${bgClasses[type] || bgClasses.info}`;
+            content.innerHTML = `<i class="fa-solid fa-circle-info"></i> ${message}`;
+
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.remove('translate-y-[-20px]', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-[-20px]', 'opacity-0');
+                setTimeout(() => toast.classList.add('hidden'), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
